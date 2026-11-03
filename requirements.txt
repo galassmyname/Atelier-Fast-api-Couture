@@ -1,0 +1,48 @@
+alembic==1.20.1                      # Gestion des migrations de la base de données
+annotated-doc==0.0.5                 # Gestion des métadonnées de documentation
+annotated-types==0.8.0               # Ajout de contraintes aux annotations de types
+anyio==4.16.0                        # Gestion de la programmation asynchrone
+argon2-cffi==25.1.0                   # Hachage sécurisé des mots de passe avec Argon2
+argon2-cffi-bindings==26.1.0          # Composants techniques nécessaires à Argon2
+certifi==2026.10.23                   # Fournit les certificats racines pour les connexions HTTPS
+cffi==2.1.1                           # Permet à Python de communiquer avec des bibliothèques C
+click==8.5.0                          # Création d'interfaces en ligne de commande
+colorama==0.4.6                       # Affichage de couleurs dans le terminal
+cryptography==50.0.2                  # Fournit des fonctions de chiffrement et de sécurité
+dnspython==2.9.1                      # Effectue des recherches DNS
+ecdsa==0.19.2                         # Fournit des signatures numériques basées sur ECDSA
+email-validator==2.3.0                # Vérification de la validité des adresses email
+fastapi==0.162.0                      # Framework pour développer des API REST en Python
+h11==0.16.0                           # Implémentation du protocole HTTP/1.1
+httpcore==1.0.9                       # Couche de communication HTTP utilisée par HTTPX
+httptools==0.9.0                      # Analyse rapide des requêtes HTTP
+httpx==0.28.1                         # Client HTTP pour communiquer avec des API externes
+idna==3.20                            # Gestion des noms de domaines internationaux
+iniconfig==2.3.1                      # Lecture des fichiers de configuration INI
+Mako==1.4.3                           # Moteur de templates utilisé notamment par Alembic
+MarkupSafe==3.0.4                     # Échappement sécurisé des caractères dans les templates
+opentelemetry-api==1.45.2             # Instrumentation et observabilité de l'application
+packaging==26.3                       # Gestion et comparaison des versions des packages
+passlib==1.7.4                        # Gestion du hachage et de la vérification des mots de passe
+pluggy==1.7.0                         # Système de plugins utilisé notamment par Pytest
+psycopg2-binary==2.9.13               # Driver permettant à Python de communiquer avec PostgreSQL
+pyasn1==0.6.5                         # Manipulation des structures de données ASN.1
+pycparser==3.12                       # Analyse du code source C utilisé par CFFI
+pydantic==2.14.2                      # Validation et structuration des données
+pydantic-settings==2.16.2             # Gestion des configurations et variables d'environnement
+pydantic_core==2.50.2                 # Moteur interne de validation de Pydantic
+Pygments==2.21.0                      # Coloration syntaxique du code
+pytest==9.2.0                         # Exécution des tests automatisés
+python-dotenv==1.2.4                  # Chargement des variables depuis le fichier .env
+python-jose==3.5.0                    # Création et vérification des tokens JWT
+python-multipart==0.0.33              # Gestion des formulaires et transferts de fichiers
+PyYAML==6.0.3                         # Lecture et écriture des fichiers YAML
+rsa==4.9.1                            # Opérations cryptographiques basées sur RSA
+six==1.17.0                           # Compatibilité entre différentes versions de Python
+SQLAlchemy==2.1.6                     # ORM pour interagir avec les bases de données
+starlette==1.10.0                     # Gestion HTTP et ASGI utilisée par FastAPI
+typing-inspection==0.4.4              # Inspection des annotations de types Python
+typing_extensions==4.16.0             # Extension des fonctionnalités de typage Python
+uvicorn==0.54.0                       # Serveur ASGI pour exécuter l'application FastAPI
+watchfiles==1.3.0                     # Surveillance des fichiers pour le rechargement automatique
+websockets==17.4                      # Gestion des communications WebSocket en temps réel
