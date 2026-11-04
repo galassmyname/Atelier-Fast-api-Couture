@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+
 from app.database import get_db
 from app.exceptions import ErreurMetier
 from app.routers import auth, utilisateurs

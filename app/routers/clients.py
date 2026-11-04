@@ -4,7 +4,8 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, Query, Response, status
 from sqlalchemy.orm import Session
-
+from app.schemas.commande import CommandeListItem
+from app.services import commande_service
 from app.database import get_db
 from app.deps import get_current_user, require_admin
 from app.schemas.client import (
@@ -68,3 +69,15 @@ def supprimer(client_id: int, db: Session = Depends(get_db)):
 @router.get("/{client_id}/resume", response_model=ClientResume)
 def resume(client_id: int, db: Session = Depends(get_db)):
     return client_service.resume_client(db, client_id)
+
+
+@router.get("/{client_id}/commandes", response_model=Page[CommandeListItem])
+def commandes_du_client(
+    client_id: int,
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    db: Session = Depends(get_db),
+):
+    """Commandes du client, la plus récente d'abord."""
+    items, total = commande_service.commandes_du_client(db, client_id, limit, offset)
+    return {"items": items, "total": total, "limit": limit, "offset": offset}

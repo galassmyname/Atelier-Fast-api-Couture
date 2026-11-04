@@ -1,100 +1,108 @@
-"""Modèles Commande, LigneCommande et HistoriqueStatut."""
+"""Schémas Pydantic des commandes, lignes et historique."""
 
 from datetime import date, datetime
-from typing import Optional
+from typing import Literal, Optional
 
-from sqlalchemy import Date, DateTime, ForeignKey, Integer, String, Text, func
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from pydantic import BaseModel, ConfigDict, Field
 
-from app.database import Base
+from app.schemas.livraison import LivraisonRead
+from app.schemas.paiement import PaiementRead
 
-
-class Commande(Base):
-    __tablename__ = "commandes"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    # CMD-AAAA-NNNNN (RG5), calculé après l'insertion à partir de l'id
-    numero: Mapped[Optional[str]] = mapped_column(String(20), unique=True, index=True)
-    client_id: Mapped[int] = mapped_column(ForeignKey("clients.id"), index=True)
-    mesure_id: Mapped[Optional[int]] = mapped_column(ForeignKey("mesures.id"))
-    statut: Mapped[str] = mapped_column(String(20), default="en_attente", index=True)
-    date_commande: Mapped[date] = mapped_column(Date)
-    date_livraison_prevue: Mapped[date] = mapped_column(Date)
-    date_livraison_reelle: Mapped[Optional[date]] = mapped_column(Date)
-    # Montants en FCFA, toujours calculés par le serveur (RG7)
-    remise: Mapped[int] = mapped_column(Integer, default=0)
-    montant_total: Mapped[int] = mapped_column(Integer, default=0)
-    montant_paye: Mapped[int] = mapped_column(Integer, default=0)
-    notes: Mapped[Optional[str]] = mapped_column(Text)
-    cree_par_id: Mapped[Optional[int]] = mapped_column(ForeignKey("utilisateurs.id"))
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
-    )
-
-    # Relations
-    client: Mapped["Client"] = relationship(back_populates="commandes")
-    mesure: Mapped[Optional["Mesure"]] = relationship()
-    lignes: Mapped[list["LigneCommande"]] = relationship(
-        back_populates="commande", cascade="all, delete-orphan"
-    )
-    paiements: Mapped[list["Paiement"]] = relationship(
-        back_populates="commande", cascade="all, delete-orphan", order_by="Paiement.id"
-    )
-    historique: Mapped[list["HistoriqueStatut"]] = relationship(
-        back_populates="commande",
-        cascade="all, delete-orphan",
-        order_by="HistoriqueStatut.date_changement",
-    )
-    # 0 ou 1 livraison : uselist=False donne un objet et non une liste
-    livraison: Mapped[Optional["Livraison"]] = relationship(
-        back_populates="commande", uselist=False, cascade="all, delete-orphan"
-    )
-
-    @property
-    def solde(self) -> int:
-        """Ce que le client doit encore (RG7)."""
-        return self.montant_total - self.montant_paye
+Statut = Literal[
+    "en_attente",
+    "en_coupe",
+    "en_couture",
+    "essayage",
+    "retouches",
+    "terminee",
+    "livree",
+    "annulee",
+]
 
 
-class LigneCommande(Base):
-    __tablename__ = "lignes_commande"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    commande_id: Mapped[int] = mapped_column(
-        ForeignKey("commandes.id", ondelete="CASCADE"), index=True
-    )
-    type_vetement_id: Mapped[int] = mapped_column(ForeignKey("types_vetement.id"))
-    description: Mapped[Optional[str]] = mapped_column(Text)
-    quantite: Mapped[int] = mapped_column(Integer, default=1)
-    # Prix négociable, par défaut le prix_base du catalogue (RG6)
-    prix_unitaire: Mapped[int] = mapped_column(Integer)
-
-    commande: Mapped["Commande"] = relationship(back_populates="lignes")
-    type_vetement: Mapped["TypeVetement"] = relationship()
-
-    @property
-    def sous_total(self) -> int:
-        return self.quantite * self.prix_unitaire
+# ---------- Lignes ----------
+class LigneCreate(BaseModel):
+    type_vetement_id: int
+    description: Optional[str] = None
+    quantite: int = Field(default=1, ge=1)
+    # Facultatif : par défaut le prix de base du catalogue (RG6)
+    prix_unitaire: Optional[int] = Field(default=None, ge=0)
 
 
-class HistoriqueStatut(Base):
-    __tablename__ = "historique_statuts"
+class LigneRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
 
-    id: Mapped[int] = mapped_column(primary_key=True)
-    commande_id: Mapped[int] = mapped_column(
-        ForeignKey("commandes.id", ondelete="CASCADE"), index=True
-    )
-    ancien_statut: Mapped[Optional[str]] = mapped_column(
-        String(20)
-    )  # vide à la création (RG15)
-    nouveau_statut: Mapped[str] = mapped_column(String(20))
-    commentaire: Mapped[Optional[str]] = mapped_column(Text)
-    utilisateur_id: Mapped[Optional[int]] = mapped_column(ForeignKey("utilisateurs.id"))
-    date_changement: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+    id: int
+    type_vetement_id: int
+    type_vetement_nom: str  # propriété du modèle
+    description: Optional[str]
+    quantite: int
+    prix_unitaire: int
+    sous_total: int  # propriété du modèle
 
-    commande: Mapped["Commande"] = relationship(back_populates="historique")
+
+# ---------- Commandes ----------
+class CommandeCreate(BaseModel):
+    client_id: int
+    mesure_id: Optional[int] = None
+    lignes: list[LigneCreate] = Field(min_length=1)  # au moins une ligne
+    remise: int = Field(default=0, ge=0)
+    date_livraison_prevue: Optional[date] = None
+    notes: Optional[str] = None
+
+
+class CommandeUpdate(BaseModel):
+    mesure_id: Optional[int] = None
+    date_livraison_prevue: Optional[date] = None
+    remise: Optional[int] = Field(default=None, ge=0)
+    notes: Optional[str] = None
+
+
+class StatutChange(BaseModel):
+    statut: Statut
+    commentaire: Optional[str] = None
+
+
+class CommandeListItem(BaseModel):
+    """Élément de liste (route 25) : avec client_nom, solde et en_retard."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    numero: str
+    client_id: int
+    client_nom: str
+    statut: Statut
+    date_commande: date
+    date_livraison_prevue: date
+    montant_total: int
+    montant_paye: int
+    solde: int
+    en_retard: bool
+
+
+class CommandeRead(CommandeListItem):
+    """Détail complet (route 26)."""
+
+    mesure_id: Optional[int]
+    date_livraison_reelle: Optional[date]
+    remise: int
+    notes: Optional[str]
+    cree_par_id: Optional[int]
+    created_at: datetime
+    updated_at: datetime
+    lignes: list[LigneRead]
+    paiements: list[PaiementRead]
+    livraison: Optional[LivraisonRead]
+
+
+class HistoriqueRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    commande_id: int
+    ancien_statut: Optional[Statut]
+    nouveau_statut: Statut
+    commentaire: Optional[str]
+    utilisateur_id: Optional[int]
+    date_changement: datetime
