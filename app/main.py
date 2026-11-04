@@ -30,6 +30,8 @@ def gerer_erreur_metier(request: Request, exc: ErreurMetier):
 # Enregistrement des routeurs (on en ajoutera à chaque étape)
 app.include_router(auth.router, prefix=API_PREFIX)
 app.include_router(utilisateurs.router, prefix=API_PREFIX)
+app.include_router(clients.router, prefix=API_PREFIX)
+app.include_router(catalogue.router, prefix=API_PREFIX)
 
 
 @app.get("/health", tags=["Santé"])
