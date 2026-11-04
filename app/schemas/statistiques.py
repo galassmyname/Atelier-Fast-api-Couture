@@ -1,40 +1,35 @@
-"""Schémas Pydantic des utilisateurs : création, modification, lecture."""
+"""Schémas des statistiques (administrateur)."""
 
-from datetime import datetime
-from typing import Literal, Optional
-
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
-
-# Seuls rôles autorisés : toute autre valeur donne une 422 automatique
-Role = Literal["admin", "tailleur", "accueil"]
+from pydantic import BaseModel
 
 
-class UtilisateurCreate(BaseModel):
-    email: EmailStr
-    nom_complet: str = Field(min_length=1, max_length=150)
-    mot_de_passe: str = Field(min_length=8)  # RG21 : 8 caractères minimum
-    role: Role
+class TableauDeBord(BaseModel):
+    chiffre_affaires_mois: int
+    encaisse_mois: int
+    nb_commandes_mois: int
+    reste_a_encaisser: int
+    commandes_par_statut: dict[str, int]
+    nb_commandes_en_retard: int
+    commandes_pretes_a_livrer: int
+    livraisons_du_jour: int
 
 
-class UtilisateurUpdate(BaseModel):
-    """PATCH : tous les champs facultatifs, seuls ceux envoyés sont modifiés."""
-
-    nom_complet: Optional[str] = Field(default=None, min_length=1, max_length=150)
-    role: Optional[Role] = None
-    actif: Optional[bool] = None
-    mot_de_passe: Optional[str] = Field(default=None, min_length=8)
+class PeriodeCA(BaseModel):
+    periode: str  # "2026-11-04" (jour) ou "2026-11" (mois)
+    chiffre_affaires: int
+    encaisse: int
 
 
-class UtilisateurRead(BaseModel):
-    """Lecture : jamais de mot_de_passe_hash (RG21)."""
+class StatTypeVetement(BaseModel):
+    type_vetement_id: int
+    nom: str
+    quantite_vendue: int
+    chiffre_affaires: int  # avant remise
 
-    model_config = ConfigDict(
-        from_attributes=True
-    )  # lecture depuis un modèle SQLAlchemy
 
-    id: int
-    email: EmailStr
-    nom_complet: str
-    role: Role
-    actif: bool
-    created_at: datetime
+class TopClient(BaseModel):
+    client_id: int
+    client_nom: str
+    nb_commandes: int
+    chiffre_affaires: int
+    solde_du: int

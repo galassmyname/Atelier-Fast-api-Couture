@@ -14,6 +14,17 @@ from app.routers import (
     paiements,
     utilisateurs,
 )
+from app.routers import (
+    auth,
+    catalogue,
+    clients,
+    commandes,
+    livraisons,
+    mesures,
+    paiements,
+    statistiques,
+    utilisateurs,
+)
 from app.database import get_db
 from app.exceptions import ErreurMetier
 from app.routers import auth, utilisateurs
@@ -46,6 +57,19 @@ app.include_router(mesures.router, prefix=API_PREFIX)
 app.include_router(commandes.router, prefix=API_PREFIX)
 app.include_router(paiements.router, prefix=API_PREFIX)
 app.include_router(paiements.router_commande, prefix=API_PREFIX)
+
+app.include_router(auth.router, prefix=API_PREFIX)
+app.include_router(utilisateurs.router, prefix=API_PREFIX)
+app.include_router(clients.router, prefix=API_PREFIX)
+app.include_router(catalogue.router, prefix=API_PREFIX)
+app.include_router(mesures.router_client, prefix=API_PREFIX)
+app.include_router(mesures.router, prefix=API_PREFIX)
+app.include_router(commandes.router, prefix=API_PREFIX)
+app.include_router(paiements.router_commande, prefix=API_PREFIX)
+app.include_router(paiements.router, prefix=API_PREFIX)
+app.include_router(livraisons.router_commande, prefix=API_PREFIX)
+app.include_router(livraisons.router, prefix=API_PREFIX)
+app.include_router(statistiques.router, prefix=API_PREFIX)
 
 
 @app.get("/health", tags=["Santé"])
