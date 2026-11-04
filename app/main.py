@@ -32,6 +32,8 @@ app.include_router(auth.router, prefix=API_PREFIX)
 app.include_router(utilisateurs.router, prefix=API_PREFIX)
 app.include_router(clients.router, prefix=API_PREFIX)
 app.include_router(catalogue.router, prefix=API_PREFIX)
+app.include_router(mesures.router_client, prefix=API_PREFIX)
+app.include_router(mesures.router, prefix=API_PREFIX)
 
 
 @app.get("/health", tags=["Santé"])
