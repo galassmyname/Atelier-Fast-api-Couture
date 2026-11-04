@@ -1,115 +1,108 @@
-"""Routes des commandes (24 à 31)."""
+"""Schémas Pydantic des commandes, lignes et historique."""
 
-from datetime import date
-from typing import Optional
+from datetime import date, datetime
+from typing import Literal, Optional
 
-from fastapi import APIRouter, Depends, Query, status
-from sqlalchemy.orm import Session
+from pydantic import BaseModel, ConfigDict, Field
 
-from app.database import get_db
-from app.deps import get_current_user, require_accueil
-from app.models import Utilisateur
-from app.schemas.commande import (
-    CommandeCreate,
-    CommandeListItem,
-    CommandeRead,
-    CommandeUpdate,
-    HistoriqueRead,
-    LigneCreate,
-    Statut,
-    StatutChange,
-)
-from app.schemas.common import Page
-from app.services import commande_service
+from app.schemas.livraison import LivraisonRead
+from app.schemas.paiement import PaiementRead
 
-router = APIRouter(
-    prefix="/commandes", tags=["Commandes"], dependencies=[Depends(get_current_user)]
-)
+Statut = Literal[
+    "en_attente",
+    "en_coupe",
+    "en_couture",
+    "essayage",
+    "retouches",
+    "terminee",
+    "livree",
+    "annulee",
+]
 
 
-@router.post("", response_model=CommandeRead, status_code=status.HTTP_201_CREATED)
-def creer(
-    donnees: CommandeCreate,
-    db: Session = Depends(get_db),
-    auteur: Utilisateur = Depends(require_accueil),
-):
-    commande = commande_service.creer_commande(db, donnees, auteur)
-    db.commit()
-    return commande
+# ---------- Lignes ----------
+class LigneCreate(BaseModel):
+    type_vetement_id: int
+    description: Optional[str] = None
+    quantite: int = Field(default=1, ge=1)
+    # Facultatif : par défaut le prix de base du catalogue (RG6)
+    prix_unitaire: Optional[int] = Field(default=None, ge=0)
 
 
-@router.get("", response_model=Page[CommandeListItem])
-def lister(
-    statut: Optional[Statut] = None,
-    client_id: Optional[int] = None,
-    en_retard: Optional[bool] = None,
-    date_min: Optional[date] = None,
-    date_max: Optional[date] = None,
-    numero: Optional[str] = None,
-    limit: int = Query(default=20, ge=1, le=100),
-    offset: int = Query(default=0, ge=0),
-    db: Session = Depends(get_db),
-):
-    items, total = commande_service.lister_commandes(
-        db, statut, client_id, en_retard, date_min, date_max, numero, limit, offset
-    )
-    return {"items": items, "total": total, "limit": limit, "offset": offset}
+class LigneRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    type_vetement_id: int
+    type_vetement_nom: str  # propriété du modèle
+    description: Optional[str]
+    quantite: int
+    prix_unitaire: int
+    sous_total: int  # propriété du modèle
 
 
-@router.get("/{commande_id}", response_model=CommandeRead)
-def detail(commande_id: int, db: Session = Depends(get_db)):
-    return commande_service.obtenir_commande(db, commande_id)
+# ---------- Commandes ----------
+class CommandeCreate(BaseModel):
+    client_id: int
+    mesure_id: Optional[int] = None
+    lignes: list[LigneCreate] = Field(min_length=1)  # au moins une ligne
+    remise: int = Field(default=0, ge=0)
+    date_livraison_prevue: Optional[date] = None
+    notes: Optional[str] = None
 
 
-@router.patch(
-    "/{commande_id}",
-    response_model=CommandeRead,
-    dependencies=[Depends(require_accueil)],
-)
-def modifier(commande_id: int, donnees: CommandeUpdate, db: Session = Depends(get_db)):
-    commande = commande_service.modifier_commande(db, commande_id, donnees)
-    db.commit()
-    return commande
+class CommandeUpdate(BaseModel):
+    mesure_id: Optional[int] = None
+    date_livraison_prevue: Optional[date] = None
+    remise: Optional[int] = Field(default=None, ge=0)
+    notes: Optional[str] = None
 
 
-@router.post("/{commande_id}/statut", response_model=CommandeRead)
-def changer_statut(
-    commande_id: int,
-    donnees: StatutChange,
-    db: Session = Depends(get_db),
-    auteur: Utilisateur = Depends(get_current_user),
-):
-    # Tous les rôles : les restrictions (RG13-14) sont dans le service
-    commande = commande_service.changer_statut(db, commande_id, donnees, auteur)
-    db.commit()
-    return commande
+class StatutChange(BaseModel):
+    statut: Statut
+    commentaire: Optional[str] = None
 
 
-@router.get("/{commande_id}/historique", response_model=list[HistoriqueRead])
-def historique(commande_id: int, db: Session = Depends(get_db)):
-    return commande_service.historique_commande(db, commande_id)
+class CommandeListItem(BaseModel):
+    """Élément de liste (route 25) : avec client_nom, solde et en_retard."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    numero: str
+    client_id: int
+    client_nom: str
+    statut: Statut
+    date_commande: date
+    date_livraison_prevue: date
+    montant_total: int
+    montant_paye: int
+    solde: int
+    en_retard: bool
 
 
-@router.post(
-    "/{commande_id}/lignes",
-    response_model=CommandeRead,
-    status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_accueil)],
-)
-def ajouter_ligne(
-    commande_id: int, donnees: LigneCreate, db: Session = Depends(get_db)
-):
-    commande = commande_service.ajouter_ligne(db, commande_id, donnees)
-    db.commit()
-    return commande
+class CommandeRead(CommandeListItem):
+    """Détail complet (route 26)."""
+
+    mesure_id: Optional[int]
+    date_livraison_reelle: Optional[date]
+    remise: int
+    notes: Optional[str]
+    cree_par_id: Optional[int]
+    created_at: datetime
+    updated_at: datetime
+    lignes: list[LigneRead]
+    paiements: list[PaiementRead]
+    livraison: Optional[LivraisonRead]
 
 
-@router.delete(
-    "/{commande_id}/lignes/{ligne_id}",
-    response_model=CommandeRead,
-    dependencies=[Depends(require_accueil)],
-)
-def supprimer_ligne(commande_id: int, ligne_id: int, db: Session = Depends(get_db)):
-    commande = commande_service.supprimer_ligne(db, commande_id, ligne_id)
-    db.commit()
-    return commande
+class HistoriqueRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    commande_id: int
+    ancien_statut: Optional[Statut]
+    nouveau_statut: Statut
+    commentaire: Optional[str]
+    utilisateur_id: Optional[int]
+    date_changement: datetime
