@@ -4,16 +4,9 @@ from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from sqlalchemy.orm import Session
-from app.routers import auth, catalogue, clients, commandes, mesures, utilisateurs
-from app.routers import (
-    auth,
-    catalogue,
-    clients,
-    commandes,
-    mesures,
-    paiements,
-    utilisateurs,
-)
+
+from app.database import get_db
+from app.exceptions import ErreurMetier
 from app.routers import (
     auth,
     catalogue,
@@ -25,9 +18,6 @@ from app.routers import (
     statistiques,
     utilisateurs,
 )
-from app.database import get_db
-from app.exceptions import ErreurMetier
-from app.routers import auth, utilisateurs
 
 app = FastAPI(
     title="API Atelier de couture",
@@ -47,17 +37,7 @@ def gerer_erreur_metier(request: Request, exc: ErreurMetier):
     )
 
 
-# Enregistrement des routeurs (on en ajoutera à chaque étape)
-app.include_router(auth.router, prefix=API_PREFIX)
-app.include_router(utilisateurs.router, prefix=API_PREFIX)
-app.include_router(clients.router, prefix=API_PREFIX)
-app.include_router(catalogue.router, prefix=API_PREFIX)
-app.include_router(mesures.router_client, prefix=API_PREFIX)
-app.include_router(mesures.router, prefix=API_PREFIX)
-app.include_router(commandes.router, prefix=API_PREFIX)
-app.include_router(paiements.router, prefix=API_PREFIX)
-app.include_router(paiements.router_commande, prefix=API_PREFIX)
-
+# Enregistrement de tous les routeurs
 app.include_router(auth.router, prefix=API_PREFIX)
 app.include_router(utilisateurs.router, prefix=API_PREFIX)
 app.include_router(clients.router, prefix=API_PREFIX)

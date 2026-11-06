@@ -1,0 +1,31 @@
+services:
+  # Base de données PostgreSQL
+  db:
+    image: postgres:16
+    env_file: .env
+    volumes:
+      - pgdata:/var/lib/postgresql/data   # les données survivent aux redémarrages
+    ports:
+      - "5433:5432"   # 5433 côté PC pour ne pas gêner un PostgreSQL déjà installé
+    healthcheck:
+      # Vérifie que PostgreSQL accepte les connexions
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # API FastAPI
+  api:
+    build: .
+    env_file: .env
+    environment:
+      # Dans Docker, l'hôte de la base est le service "db"
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy   # attend que la base soit prête
+
+volumes:
+  pgdata:

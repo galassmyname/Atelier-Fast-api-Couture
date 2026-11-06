@@ -53,22 +53,25 @@ class Commande(Base):
         back_populates="commande", uselist=False, cascade="all, delete-orphan"
     )
 
+    # ---------- Propriétés calculées (lues par Pydantic) ----------
     @property
     def solde(self) -> int:
         """Ce que le client doit encore (RG7)."""
         return self.montant_total - self.montant_paye
-        @property
+
+    @property
     def en_retard(self) -> bool:
         """RG11 : date prévue dépassée et commande ni livrée ni annulée."""
-        return (
-            self.date_livraison_prevue < date.today()
-            and self.statut not in ("livree", "annulee")
+        return self.date_livraison_prevue < date.today() and self.statut not in (
+            "livree",
+            "annulee",
         )
 
     @property
     def client_nom(self) -> str:
         """Nom affiché dans les listes de commandes."""
         return f"{self.client.prenom} {self.client.nom}"
+
 
 class LigneCommande(Base):
     __tablename__ = "lignes_commande"
@@ -89,10 +92,12 @@ class LigneCommande(Base):
     @property
     def sous_total(self) -> int:
         return self.quantite * self.prix_unitaire
-        @property
+
+    @property
     def type_vetement_nom(self) -> str:
         """Nom de la prestation, affiché dans le détail de la commande."""
         return self.type_vetement.nom
+
 
 class HistoriqueStatut(Base):
     __tablename__ = "historique_statuts"

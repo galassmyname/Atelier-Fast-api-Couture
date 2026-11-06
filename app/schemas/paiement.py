@@ -2,10 +2,17 @@
 
 from datetime import date, datetime
 from typing import Literal, Optional
+
 from pydantic import BaseModel, ConfigDict, Field
-from pydantic import BaseModel, ConfigDict
 
 ModePaiement = Literal["especes", "wave", "orange_money", "virement", "cheque"]
+
+
+class PaiementCreate(BaseModel):
+    montant: int = Field(gt=0)  # RG16 : strictement positif
+    mode: ModePaiement
+    reference: Optional[str] = None  # ex. identifiant de transaction Wave
+    date_paiement: Optional[date] = None  # aujourd'hui par défaut
 
 
 class PaiementRead(BaseModel):
